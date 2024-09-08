@@ -1,5 +1,6 @@
 import os
 import openai
+import anthropic
 import transformers
 
 from util.prompt import assistant_prompts
@@ -24,7 +25,7 @@ class OpenAIAssistant(LanguageAssistant):
         self.kwargs = kwargs
         
         if api_key is None:
-            raise ValueError("OPENAI_API_KEY key must be provided if using openai model")
+            raise ValueError("OPENAI_API_KEY must be provided if using openai models")
         elif base_url is None:
             self.openai_client = openai.OpenAI(
                 api_key=self.api_key
@@ -47,16 +48,14 @@ class OpenAIAssistant(LanguageAssistant):
     
 
 class LLaMAAssistant(LanguageAssistant):
-    def __init__(self, name, model, model_path, device_map="auto", kwargs={}):
+    def __init__(self, name, model, model_path, kwargs={}):
         super().__init__(name, model)
         self.model_path = model_path
-        self.device_map = device_map
         self.kwargs = kwargs
         self.pipeline = transformers.pipeline(
             "text-generation",
             model=self.model_path,
             model_kwargs=self.kwargs,
-            device_map=self.device_map,
         )
 
         
@@ -69,6 +68,40 @@ class LLaMAAssistant(LanguageAssistant):
         )
         
         return outputs[0]["generated_text"][-1]["content"]
+    
+    
+class ClaudeAssistant(LanguageAssistant):
+    def __init__(self, name, model, api_key=None, base_url=None, kwargs={}):
+        super().__init__(name, model)
+        self.api_key = api_key
+        self.base_url = base_url
+        self.openai_client = None
+        self.kwargs = kwargs
+        
+        if api_key is None:
+            raise ValueError("ANTHROPIC_API_KEY must be provided if using claude models")
+        elif base_url is None:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=self.api_key
+            )
+        else:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+            
+    def generate_response(self, messages):
+        super().generate_response()
+        system_prompt = messages[0]["content"]
+        messages = messages[1:]
+        response = self.anthropic_client.messages.create(
+            model=self.model,
+            system=system_prompt,
+            messages=messages,
+            max_tokens=self.kwargs["max_tokens"]
+        )
+        
+        return response.content[0].text
 
 
 def LoadModelAssistant(model_info):
@@ -77,13 +110,22 @@ def LoadModelAssistant(model_info):
             model_info["name"],
             model_info["model_name"],
             model_info["model_path"],
-            device_map=model_info["device_map"],
             kwargs=model_info["kwargs"]
         )
     elif "gpt" in model_info["model_name"].lower():
         if model_info["api_key"] is None:
             model_info["api_key"] = os.getenv("OPENAI_API_KEY")
         return OpenAIAssistant(
+            model_info["name"],
+            model_info["model_name"],
+            model_info["api_key"],
+            model_info["base_url"],
+            kwargs=model_info["kwargs"]
+        )
+    elif "claude" in model_info["model_name"].lower():
+        if model_info["api_key"] is None:
+            model_info["api_key"] = os.getenv("ANTHROPIC_API_KEY")
+        return ClaudeAssistant(
             model_info["name"],
             model_info["model_name"],
             model_info["api_key"],

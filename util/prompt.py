@@ -1,25 +1,35 @@
 assistant_prompts = {
     "system": "You are an helpful assistant. You can help the user to find information, answer questions, and provide suggestions.",
-    "General": "Public You are now General Public, one of the referees in this task. You are interested in the story and looking for updates on the investigation. Please think critically by yourself and note that it's your responsibility to choose one of which is the better first.",
-    "Critic": " You are now Critic, one of the referees in this task. You will check fluent writing, clear sentences, and good wording in summary writing. Your job is to question others judgment to make sure their judgment is well-considered and offer an alternative solution if two responses are at the same level.",
-    "News Author": "You are News Author, one of the referees in this task. You will focus on the consistency with the original article. Please help other people to determine which response is the better one.",
-    "Psychologist": "You are Psychologist, one of the referees in this task. You will study human behavior and mental processes in order to understand and explain human behavior. Please help other people to determine which response is the better one.",
-    "Scientist": "You are Scientist, one of the referees in this task. You are a professional engaged in systematic study who possesses a strong background in the scientific method, critical thinking, and problem-solving abilities. Please help other people to determine which response is the better one."
 }
 
-general_prompt = (
-    "[Question] {question}"
-	"[The Start of Assistant 1's Answer] {text_one} [The End of Assistant 1's Answer] "
-	"[The Start of Assistant 2's Answer] {text_two} [The End of Assistant 2's Answer] "
-	"[System] We would like to request your feedback on the performance of two AI assistants in "
+debate_prompt_ground_truth = (
+    "Question: {question}"
+	"[The Start of Assistant 1's Answer]\n {response_one} \n[The End of Assistant 1's Answer]\n"
+	"[The Start of Assistant 2's Answer]\n {response_two} \n[The End of Assistant 2's Answer]\n"
+	"We would like to request your feedback on the performance of two AI assistants in response to the user question displayed above.\n"
+    "Please consider which of these responses is correct (or both).\n"
+    "There are a few other referees assigned the same task, it's your responsibility to discuss with them and "
+	"think critically before you make your final judgment.\n"
+	"Here is your discussion history: {chat_history}\n"
+    "{role_description}\n"
+	"Now it's your time to talk, please make your talk short and clear, {agent_name}"
+)
+
+
+debate_prompt_free_form = (
+    "Question: {question}"
+	"[The Start of Assistant 1's Answer]\n {response_one} \n[The End of Assistant 1's Answer]\n"
+	"[The Start of Assistant 2's Answer]\n {response_two} \n[The End of Assistant 2's Answer]\n"
+	"We would like to request your feedback on the performance of two AI assistants in "
 	"response to the user question displayed above. Please consider the helpfulness, relevance, "
 	"accuracy, and level of detail of their responses. Each assistant receives an overall score "
 	"on a scale of 1 to 10, where a higher score indicates better overall performance. There are "
 	"a few other referees assigned the same task, it's your responsibility to discuss with them and "
 	"think critically before you make your final judgment. "
-	"Here is your discussion history: {chat_history} {role_description} "
+	"Here is your discussion history: {chat_history}"
+    "{role_description} "
 	"Now it's your time to talk, please make your talk short and clear, {agent_name}"
- )
+)
 
 
 self_conf_elicit_prompt_ground_truth = {
