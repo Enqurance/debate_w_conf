@@ -13,6 +13,13 @@ debate_prompt_ground_truth = (
 	"Here is your discussion history: {chat_history}\n"
     "{role_description}\n"
 	"Now it's your time to talk, please make your talk short and clear, {agent_name}"
+  	"Please first provide a comprehensive explanation of your evaluation, avoiding any potential bias and ensuring that the order in which the responses were presented does not affect your judgment."
+	"Then, output two lines indicating the scores for Assistant 1 and 2, respectively."
+	"Remember that you are not required to output the same value as other referees !"
+	"Output with the following format strictly:"
+	"Evaluation evidence: [your explanation here]"
+	"The score of Assistant 1: [score only]"
+	"The score of Assistant 2: [score only]"
 )
 
 
@@ -29,11 +36,18 @@ debate_prompt_free_form = (
 	"Here is your discussion history: {chat_history}"
     "{role_description} "
 	"Now it's your time to talk, please make your talk short and clear, {agent_name}"
+ 	"Please first provide a comprehensive explanation of your evaluation, avoiding any potential bias and ensuring that the order in which the responses were presented does not affect your judgment. "
+    "Then, output two lines indicating the scores for Assistant 1 and 2, respectively. "
+	"Remember that you are not required to output the same value as other referees! "
+	"Output with the following format strictly:"
+	"Evaluation evidence: [your explanation here]"
+	"The score of Assistant 1: [score only]"
+	"The score of Assistant 2: [score only]"
 )
 
 
 self_conf_elicit_prompt_ground_truth = {
-	"Self-Probing":
+	"temp":
 		"Question: {question}, Possible Answer: {answer} "
 		"Q: How likely is the above answer to be correct? "
 		"Please first show your reasoning concisely and then answer with the following format:\n"
@@ -45,14 +59,44 @@ self_conf_elicit_prompt_ground_truth = {
 		"“'Explanation: [insert step-by-step analysis here] Answer and Confidence (0-100): [ONLY the option letter; not a complete sentence], [Your confidence level, please only include the numerical number in the range of 0-100]%”'\n"
 		"Only give me the reply according to this format, don't give any other words.\n"
 		"Question: {question} Now, please answer this question and provide your confidence level. Let's think it step by step.",
-	"Vanilla":
-		"Read the question, provide your answer and your confidence in this answer. "
-		"Note: The confidence indicates how likely you think your answer is true."
-		" Use the following format to answer:\n"
-		"“'Answer and Confidence (0-100): [ONLY the number; not a complete sentence], [Your confidence level, please only include the numerical number in the range of 0-100]%”'\n"
-		"Only the answer and confidence, don't give any explanation. "
-		"Question: {question} "
-		"Now, please answer this question and provide your confidence level."
+	"Self-Probing-Dual":
+        {
+            "system": "Question: {question}"
+	        "[The Start of Assistant 1's Answer]\n {response_one} \n[The End of Assistant 1's Answer]\n"
+	        "[The Start of Assistant 2's Answer]\n {response_two} \n[The End of Assistant 2's Answer]\n"
+	        "We would like to request your feedback on the performance of two AI assistants in response to the user question displayed above.\n"
+            "Please consider which of these responses is correct (or both), and provide your confidence in both answer."
+            "There are a few other referees assigned the same task, it's your responsibility to discuss with them and "
+	        "think critically before you make your final judgment.\n"
+	        "Here is your discussion history: {chat_history}\n"
+            "{role_description}\n",
+            
+	        "user": "Now it's your time to talk, please make your talk short and clear, {agent_name}. "
+  	        "Please first provide a comprehensive explanation of your evaluation, avoiding any potential bias and ensuring that the order in which the responses were presented does not affect your judgment. "
+	        "Then, output two lines indicating the confidence scores(0-100) for Assistant 1 and 2, respectively. You may need to refer to the confidence scores of other referees. "
+	        "Remember that you are not required to output the same value as other referees! "
+	        "Output with the following format strictly, (0-100):\n"
+	        "Evaluation evidence: [your explanation here]"
+	        "The confidence of Assistant 1: [score only]"
+	        "The confidence of Assistant 2: [score only]"
+        },
+    "Self-Probing-Single":
+        {
+            "system": "Question: {question}"
+	        "[The Start of Assistant's Answer]\n {response} \n[The End of Assistant 1's Answer]\n"
+	        "We would like to request your feedback on the performance of the AI assistant in response to the user question displayed above.\n"
+            "Please consider if the answer is correct, and provide your confidence in this answer.\n"
+	        "Think critically before you make your final judgment.\n"
+	        "Here is your discussion history: {chat_history}\n"
+            "{role_description}\n",
+            
+	        "user": "Now it's your time to talk, {agent_name}. "
+  	        "Please first provide a comprehensive explanation of your evaluation. "
+	        "Then, output one line indicating the confidence scores(0-100) for the AI Assistant. "
+	        "Output with the following format strictly, (0-100):\n"
+	        "Evaluation evidence: [your explanation here]"
+	        "The confidence of AI Assistant: [score only]"
+        }
 }
 
 self_conf_elicit_prompt_free_form = {

@@ -63,7 +63,7 @@ class LLaMAAssistant(LanguageAssistant):
         super().generate_response()
         outputs = self.pipeline(
             messages,
-            max_new_tokens=512,
+            max_new_tokens=1024,
             kwargs=self.kwargs
         )
         
@@ -104,7 +104,7 @@ class ClaudeAssistant(LanguageAssistant):
         return response.content[0].text
 
 
-def LoadModelAssistant(model_info):
+def LoadModel(model_info):
     if "llama" in model_info["model_name"].lower():
         return LLaMAAssistant(
             model_info["name"],

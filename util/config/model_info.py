@@ -6,6 +6,12 @@ model_info = {
             "device_map": "auto"
         }
     },
+    "gpt-4o-mini": {
+        "model_name": "gpt-4o-mini",
+        "api_key": None,
+        "base_url": None,
+        "kwargs": {}
+    },
     "gpt-3.5-turbo": {
         "model_name": "gpt-3.5-turbo",
         "api_key": None,

@@ -1,11 +1,12 @@
-from .language_assistants import OpenAIAssistant, LLaMAAssistant, LoadModelAssistant
+from .language_assistants import OpenAIAssistant, LLaMAAssistant, LoadModel
 from .data_loader import load_jsonl_data
-from .debate_wconf import GSMDebate
+from .debate_wconf import GSMDebateCompare, GSMDebateSingle
 
 __all__ = [
     "OpenAIAssistant",
     "LLaMAAssistant",
-    "LoadModelAssistant",
+    "LoadModel",
     "load_jsonl_data",
-    "GSMDebate",
+    "GSMDebateCompare",
+    "GSMDebateSingle"
 ]
