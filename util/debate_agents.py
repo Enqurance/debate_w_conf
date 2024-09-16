@@ -44,10 +44,10 @@ class Debator():
             question = question,
             response = response,
             chat_history = chat_history_str,
-            role_description = role_prompts[self.agent_info["role_description"]] if self.use_role else "",
         )
         
         user_prompt = prompt["user"].format(
+            role_description = role_prompts[self.agent_info["role_description"]] if self.use_role else "",
             agent_name = self.agent_info["agent_name"]
         )
 
