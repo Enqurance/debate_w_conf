@@ -28,6 +28,12 @@ model_info = {
         "model_name": "claude-3-haiku-20240307",
         "api_key": None,
         "base_url": None,
-        "kwargs": {"max_tokens": 512}
+        "kwargs": {"max_tokens": 1024}
+    },
+    "claude-3-opus-20240229": {
+        "model_name":  "claude-3-opus-20240229",
+        "api_key": None,
+        "base_url": None,
+        "kwargs": {"max_tokens": 1024}
     }
 }

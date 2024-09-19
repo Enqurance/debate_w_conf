@@ -29,7 +29,6 @@ def ExtractAnswerStrategyQA(answer):
 
 
 def LoadDebateAgents(args):
-    assert args.debate_agents == len(debaters)
     debate_agents = []
     for agent_name, agent_info in debaters.items():
         debater_model_info = model_info[agent_info["model"]]
@@ -45,7 +44,7 @@ def LoadDebateAgents(args):
             use_role=True
         )
         debate_agents.append(d)
-    return debate_agents
+    return debate_agents[:args.debate_agents]
 
 
 def LoadAssistantModel(assistant):
@@ -65,108 +64,70 @@ def LoadAssistantModels(args):
         
     return asst_1, asst_2
 
-
-def GSMDebateCompare(args):
-    # 'prompt' is for chating assistant, not for debaters
-    prompt = grade_school_math_prompt
-    data_path = datapath.GSM_dataset_path
-    GSM_data = load_jsonl_data(data_path)
-    debate_history = []
-    
-    # Load the assistant models
-    asst_1, asst_2 = LoadAssistantModels(args)
-    
-    # Load the debate agents
-    debate_agents = LoadDebateAgents(args)
-    debate_prompts = self_conf_elicit_prompt_ground_truth[args.self_elicit]
-    
-    # Iterate over the GSM dataset
-    for item in tqdm(GSM_data, desc="Debating..."):
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": item["question"]}
-        ]
         
-        response_1 = asst_1.generate_response(messages)
-        response_2 = asst_2.generate_response(messages)
-        
-        result = {
-            "question": item["question"],
-            "ground_truth": ExtractAnswerGSM(item["answer"]),
-            "assistant_model_1": args.assistant_1,
-            "assistant_model_2": args.assistant_2,
-            "prompting_scheme": args.self_elicit,
-            "response_1": response_1,
-            "response_2": response_2,
-            "chat_history": []
-        }
-        chat_history = []
-        
-        for _ in range(args.debate_turns):
-            for debater in debate_agents:
-                # time.sleep(0.1)
-                debate_response, formatted_prompt = debater.debate(debate_prompts, item["question"], response_1, response_2, chat_history)
-                chat_history.append({
-                    "agent_name": debater.agent_name,
-                    "agent_model": debater.model.model,
-                    "prompt": formatted_prompt,
-                    "response": debate_response
-                })
-
-        result["chat_history"] = chat_history
-        debate_history.append(result)
-        
-    path = os.path.join(args.output_dir, "GSM", current_timestamp_day)
-    os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, current_timestamp + ".json"), "w") as f:
-        json.dump(debate_history, f, indent=4)
-        
-        
-def GSMDebateSingle(args):
+def GSMDebateOneByOne(args):
     # 'prompt' is for chating assistant, not for debaters, this is the same as GSMDebateCompare()
-    prompt = grade_school_math_prompt
     data_path = datapath.GSM_dataset_path
     GSM_data = load_jsonl_data(data_path)
     debate_history = []
-    
-    # Load the assistant models
-    asst = LoadAssistantModel(args.assistant_1)
     
     # Load the debate agents
     debate_agents = LoadDebateAgents(args)
     debate_prompts = self_conf_elicit_prompt_ground_truth[args.self_elicit]
     
     # Iterate over the GSM dataset
-    for item in tqdm(GSM_data[:100], desc="Debating..."):
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": item["question"]}
-        ]
+    for item in tqdm(GSM_data[:500], desc="Debating..."):
         
-        response = asst.generate_response(messages)
-        
+        # Result list for GSM debating
         result = {
             "question": item["question"],
             "ground_truth": ExtractAnswerGSM(item["answer"]),
-            "assistant_model": args.assistant_1,
             "prompting_scheme": args.self_elicit,
-            "response": response,
-            "chat_history": []
+            "debate_agents": [debater.agent_name for debater in debate_agents],
+            "debate_turns": args.debate_turns,
+            "debate_history": [],
         }
-        chat_history = []
         
-        # Debating here
+        history = []
         for _ in range(args.debate_turns):
             for debater in debate_agents:
-                debate_response, formatted_prompt = debater.debate(debate_prompts, item["question"], response, chat_history)
-                chat_history.append({
-                    "agent_name": debater.agent_name,
-                    "agent_model": debater.model.model,
-                    "prompt": formatted_prompt,
-                    "response": debate_response
-                })
+                if len(history) == 0:
+                    # No chat history, we do initial debate
+                    prompt = debate_prompts["init"]
+                    system_prompt = prompt["system"].format(
+                        debater=debater.agent_name
+                    )
+                    user_prompt = prompt["user"].format(
+                        question=item["question"]
+                    )
+                    debate_response, messages = debater.debate(system_prompt, user_prompt)
+                    history.append({
+                        "agent_name": debater.agent_name,
+                        "agent_model": debater.model.model,
+                        "prompt": messages,
+                        "response": debate_response
+                    })
+                else:
+                    # Debate afterwards
+                    prompt = debate_prompts["debate"]
+                    system_prompt = prompt["system"].format(
+                        debater=debater.agent_name
+                    )
+                    history_str = "\n".join([f"{item['agent_name']}:\n{item['response']}" for item in history])
+                    user_prompt = prompt["user"].format(
+                        question=item["question"],
+                        debate_history=history_str
+                    )
+                    debate_response, formatted_prompt = debater.debate(system_prompt, user_prompt)
+                    history.append({
+                        "agent_name": debater.agent_name,
+                        "agent_model": debater.model.model,
+                        "prompt": formatted_prompt,
+                        "response": debate_response
+                    })
 
-        result["chat_history"] = chat_history
+
+        result["debate_history"] = history
         debate_history.append(result)
         
     path = os.path.join(args.output_dir, "GSM", current_timestamp_day)
@@ -175,58 +136,5 @@ def GSMDebateSingle(args):
         json.dump(debate_history, f, indent=4)
         
 
-def StrategyQADebateCompare(args):
+def StrategyQADebateOneByOne(args):
     pass
-
-
-def StrategyQADebateSingle(args):
-    # 'prompt' is for chating assistant, not for debaters
-    prompt = strategyqa_prompt
-    data_path = datapath.StrategyQA_dataset_path
-    StrategyQA_data = load_jsonl_data(data_path)
-    debate_history = []
-    
-    # Load the assistant models
-    asst = LoadAssistantModel(args.assistant_1)
-    
-    # Load the debate agents
-    debate_agents = LoadDebateAgents(args)
-    debate_prompts = self_conf_elicit_prompt_ground_truth[args.self_elicit]
-    
-    # Iterate over the StrategyQA dataset
-    for item in tqdm(StrategyQA_data[:100], desc="Debating..."):
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": item["question"]}
-        ]
-        
-        response = asst.generate_response(messages)
-        
-        result = {
-            "question": item["question"],
-            "ground_truth": ExtractAnswerStrategyQA(item["answer"]),
-            "assistant_model": args.assistant_1,
-            "prompting_scheme": args.self_elicit,
-            "response": response,
-            "chat_history": []
-        }
-        chat_history = []
-        
-        # Debate here
-        for _ in range(args.debate_turns):
-            for debater in debate_agents:
-                debate_response, formatted_prompt = debater.debate(debate_prompts, item["question"], response, chat_history)
-                chat_history.append({
-                    "agent_name": debater.agent_name,
-                    "agent_model": debater.model.model,
-                    "prompt": formatted_prompt,
-                    "response": debate_response
-                })
-
-        result["chat_history"] = chat_history
-        debate_history.append(result)
-        
-    path = os.path.join(args.output_dir, "StrategyQA", current_timestamp_day)
-    os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, current_timestamp + ".json"), "w") as f:
-        json.dump(debate_history, f, indent=4)

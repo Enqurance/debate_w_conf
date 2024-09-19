@@ -13,8 +13,13 @@ debaters = {
         "agent_name": "Bob",
         "role_description": "General",
     },
+    "James": {
+        "model": "claude-3-opus-20240229",
+        "agent_name": "James",
+        "role_description": "Author",
+    },
     "Alice": {
-        "model": "gpt-3.5-turbo-0125",
+        "model": "gpt-4o-mini",
         "agent_name": "Alice",
         "role_description": "Mathematician",
     },
